@@ -14,6 +14,7 @@ let currentFilter = 'all';
 let searchQuery = '';
 let selectedIds = new Set();
 let barChart = null;
+let safeChart = null;
 let donutChart = null;
 
 let autoScrollActive = false;
@@ -75,7 +76,14 @@ function renderKPIs() {
 
 function renderCharts() {
   const sortMode = document.getElementById('chart-sort').value;
-  const sorted = [...items].sort((a, b) => {
+  const sourceItems = monitoringMode
+    ? items.filter(i => {
+        const k = getStockStatus(i).key;
+        return k === 'out' || k === 'critical';
+      })
+    : items;
+
+  const sorted = [...sourceItems].sort((a, b) => {
     if (sortMode === 'lowest') return a.stock - b.stock;
     if (sortMode === 'highest') return b.stock - a.stock;
     return a.location.localeCompare(b.location);
@@ -236,6 +244,57 @@ function renderCharts() {
     <div class="col-3"><div class="fw-bold text-warning fs-5">${warning}</div><div class="small fw-semibold text-white">${pctWarn}%</div><small class="text-muted">Mendekati</small></div>
     <div class="col-3"><div class="fw-bold text-success fs-5">${safe}</div><div class="small fw-semibold text-white">${pctSafe}%</div><small class="text-muted">Aman</small></div>
   `;
+
+  if (monitoringMode) {
+    renderSafeChart(pageSize, barValuePlugin, rowBorderPlugin);
+  }
+}
+
+function renderSafeChart(pageSize, barValuePlugin, rowBorderPlugin) {
+  const safeItems = items
+    .filter(i => getStockStatus(i).key === 'safe')
+    .sort((a, b) => a.stock - b.stock);
+  const totalSafePages = Math.max(1, Math.ceil(safeItems.length / pageSize));
+  const safePage = ((currentPage - 1) % totalSafePages) + 1;
+  const startIdx = (safePage - 1) * pageSize;
+  const pageItems = safeItems.slice(startIdx, startIdx + pageSize);
+
+  const safeInfo = document.getElementById('safe-page-info');
+  if (safeInfo) {
+    const endIdx = Math.min(startIdx + pageItems.length, safeItems.length);
+    safeInfo.textContent = `Tab ${safePage} / ${totalSafePages} (${safeItems.length ? startIdx + 1 : 0}-${endIdx} dari ${safeItems.length})`;
+  }
+
+  const ctxSafe = document.getElementById('safeStockChart').getContext('2d');
+  if (safeChart) safeChart.destroy();
+  safeChart = new Chart(ctxSafe, {
+    type: 'bar',
+    plugins: [rowBorderPlugin, barValuePlugin],
+    data: {
+      labels: pageItems.map(i => {
+        const shortName = i.productName.split(',')[0];
+        return `${i.location} - ${shortName.slice(0, 24)}${shortName.length > 24 ? '...' : ''}`;
+      }),
+      datasets: [
+        { label: 'Stock Saat Ini', data: pageItems.map(i => i.stock), backgroundColor: '#05ffa1', borderRadius: 6, barPercentage: 0.75 },
+        { label: 'Batas Minimum', data: pageItems.map(i => i.min), backgroundColor: 'rgba(255, 255, 255, 0.25)', borderRadius: 6, barPercentage: 0.75 }
+      ]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: { duration: 250 },
+      layout: { padding: { right: 36 } },
+      plugins: {
+        legend: { position: 'top', labels: { color: '#f8fafc', boxWidth: 14, font: { size: 12 } } }
+      },
+      scales: {
+        x: { beginAtZero: true, grid: { color: 'rgba(255, 255, 255, 0.1)' }, ticks: { color: '#cbd5e1' } },
+        y: { grid: { display: false }, ticks: { color: '#f8fafc', font: { size: 11 } } }
+      }
+    }
+  });
 }
 
 function renderTable() {
@@ -248,8 +307,12 @@ function renderTable() {
 
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
+      const qNorm = q.replace(/[^a-z0-9]/g, '');
       const match = [item.location, item.itemNumber, item.productName, item.licensePlate]
-        .some(v => (v || '').toLowerCase().includes(q));
+        .some(v => {
+          const val = (v || '').toLowerCase();
+          return val.includes(q) || (qNorm && val.replace(/[^a-z0-9]/g, '').includes(qNorm));
+        });
       if (!match) return false;
     }
     return true;
@@ -267,15 +330,15 @@ function renderTable() {
 
   tbody.innerHTML = filtered.map(item => {
     const st = getStockStatus(item);
-    const isChecked = selectedIds.has(item.id) ? 'checked' : '';
     return `
       <tr class="hover:bg-slate-50 transition">
-        <td class="py-3 px-4"><input type="checkbox" ${isChecked} onchange="toggleSelectItem(${item.id}, this.checked)" class="rounded border-slate-300 text-blue-600 focus:ring-blue-500" /></td>
         <td class="py-3 px-4 font-mono font-semibold text-slate-700 text-xs">${item.location}</td>
         <td class="py-3 px-4 font-mono text-xs text-slate-600">${item.itemNumber}</td>
         <td class="py-3 px-4 text-xs font-medium text-slate-900 max-w-sm">${item.productName}</td>
         <td class="py-3 px-4 text-center font-bold text-slate-900">${item.stock}</td>
-        <td class="py-3 px-4 text-center text-xs text-slate-500">${item.min}</td>
+        <td class="py-2 px-3 text-center">
+          <input type="number" min="1" value="${item.min}" onchange="updateItemMin(${item.id}, this.value)" class="form-control form-control-sm text-center fw-bold mx-auto" style="width: 72px;" />
+        </td>
         <td class="py-3 px-4 font-mono text-xs text-slate-500">${item.licensePlate}</td>
         <td class="py-3 px-4"><span class="badge ${st.badge}">${st.label}</span></td>
       </tr>
@@ -290,10 +353,15 @@ function renderAll() {
   lucide.createIcons();
 }
 
-function toggleSelectItem(id, checked) {
-  if (checked) selectedIds.add(id);
-  else selectedIds.delete(id);
-  document.getElementById('selected-count').textContent = selectedIds.size;
+function updateItemMin(id, val) {
+  const num = Number(val);
+  if (!num || num < 1) return;
+  const item = items.find(i => i.id === id);
+  if (item) {
+    item.min = num;
+    saveData();
+    renderAll();
+  }
 }
 
 function toggleSelectAll(checked) {
@@ -370,35 +438,76 @@ function stopAutoScroll() {
 
 function toggleMonitoringMode() {
   monitoringMode = !monitoringMode;
+  const mainContainer = document.getElementById('main-container');
   const navbar = document.getElementById('main-navbar');
   const filterSec = document.getElementById('filter-section');
   const tableSec = document.getElementById('table-section');
   const exitZone = document.getElementById('exit-monitor-zone');
+  const monitorClock = document.getElementById('monitor-clock');
+  const barCard = document.getElementById('bar-card');
+  const donutCard = document.getElementById('donut-card');
+  const safeCard = document.getElementById('safe-card');
+  const barTitle = document.getElementById('bar-card-title');
+  const barSub = document.getElementById('bar-card-subtitle');
   const scrollContainer = document.getElementById('chart-scroll-container');
 
   if (monitoringMode) {
+    mainContainer.classList.remove('container-xl');
+    mainContainer.classList.add('container-fluid', 'px-4');
     navbar.classList.add('d-none');
     filterSec.classList.add('d-none');
     tableSec.classList.add('d-none');
+    donutCard.classList.add('d-none');
+    safeCard.classList.remove('d-none');
+    barCard.classList.remove('col-lg-8');
+    barCard.classList.add('col-lg-6');
+    barTitle.innerHTML = '<i data-lucide="alert-octagon" class="text-danger" style="width:18px;height:18px;"></i> Grafik Stok Habis &amp; Kritis';
+    barSub.textContent = 'Menampilkan item dengan stok 0 (Habis) dan <= Minimum (Kritis)';
     exitZone.classList.remove('d-none');
+    monitorClock.classList.remove('d-none');
     scrollContainer.style.height = '65vh';
+    currentPage = 1;
     if (document.documentElement.requestFullscreen) {
       document.documentElement.requestFullscreen().catch(() => {});
     }
     toggleAutoScroll(true);
   } else {
+    mainContainer.classList.remove('container-fluid', 'px-4');
+    mainContainer.classList.add('container-xl');
     navbar.classList.remove('d-none');
     filterSec.classList.remove('d-none');
     tableSec.classList.remove('d-none');
+    donutCard.classList.remove('d-none');
+    safeCard.classList.add('d-none');
+    barCard.classList.remove('col-lg-6');
+    barCard.classList.add('col-lg-8');
+    barTitle.innerHTML = '<i data-lucide="bar-chart-horizontal" class="text-primary" style="width:18px;height:18px;"></i> Grafik Stok per Produk vs Minimum';
+    barSub.textContent = 'Merah = Kritis (<= Min), Kuning = Mendekati Min (+10%), Hijau = Aman';
     exitZone.classList.add('d-none');
+    monitorClock.classList.add('d-none');
     scrollContainer.style.height = '540px';
+    currentPage = 1;
     if (document.fullscreenElement && document.exitFullscreen) {
       document.exitFullscreen().catch(() => {});
     }
     toggleAutoScroll(false);
   }
+  renderCharts();
   lucide.createIcons();
 }
+
+// Live Clock for Mode Monitoring
+function updateMonitorClock() {
+  const el = document.getElementById('monitor-clock');
+  if (!el) return;
+  const now = new Date();
+  el.textContent = now.toLocaleString('id-ID', {
+    weekday: 'long', day: '2-digit', month: 'short', year: 'numeric',
+    hour: '2-digit', minute: '2-digit', second: '2-digit'
+  });
+}
+updateMonitorClock();
+setInterval(updateMonitorClock, 1000);
 
 function openEditModal(id) {
   const item = items.find(i => i.id === id);
@@ -448,6 +557,12 @@ async function syncFromAppsScript(silent = false) {
         };
       });
       saveData();
+      const nowStr = new Date().toLocaleString('id-ID', {
+        day: '2-digit', month: 'short', year: 'numeric',
+        hour: '2-digit', minute: '2-digit', second: '2-digit'
+      });
+      localStorage.setItem('ts_last_sync', nowStr);
+      updateLastSyncBadge(nowStr);
       renderAll();
       if (!silent) closeModal('apps-script-modal');
     } else if (!silent) {
@@ -527,9 +642,35 @@ function checkScheduledSync() {
 }
 setInterval(checkScheduledSync, 30000);
 
+// OTA Web Update Checker (checks version.json every 30s)
+let currentAppVersion = null;
+async function checkOtaUpdate() {
+  try {
+    const res = await fetch(`version.json?t=${Date.now()}`, { cache: 'no-store' });
+    if (!res.ok) return;
+    const data = await res.json();
+    if (!currentAppVersion) {
+      currentAppVersion = data.version;
+    } else if (data.version && data.version !== currentAppVersion) {
+      location.reload();
+    }
+  } catch (_) {}
+}
+checkOtaUpdate();
+setInterval(checkOtaUpdate, 30000);
+
+function updateLastSyncBadge(text) {
+  const badge = document.getElementById('last-sync-badge');
+  if (badge && text) {
+    badge.innerHTML = `<i data-lucide="clock" style="width:13px;height:13px;"></i> Last Update: ${text}`;
+    lucide.createIcons();
+  }
+}
+
 // Init
 if (!localStorage.getItem('ts_apps_script_url')) {
   localStorage.setItem('ts_apps_script_url', DEFAULT_APPS_SCRIPT_URL);
 }
+updateLastSyncBadge(localStorage.getItem('ts_last_sync'));
 renderAll();
 syncFromAppsScript(true);

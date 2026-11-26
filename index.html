@@ -23,35 +23,43 @@
           <small class="text-white-50">PT Akasha Wira International Tbk &bull; Apps Script Live</small>
         </div>
       </div>
-      <div class="d-flex flex-wrap gap-2">
+      <div class="d-flex flex-wrap align-items-center gap-2">
         <button id="btn-monitoring-mode" onclick="toggleMonitoringMode()" class="btn btn-akasha-gold btn-sm fw-bold d-inline-flex align-items-center gap-1 shadow-sm">
           <i data-lucide="monitor" style="width:16px;height:16px;"></i> Mode Monitoring
         </button>
         <button onclick="openAppsScriptModal()" class="btn btn-light btn-sm fw-semibold d-inline-flex align-items-center gap-1 shadow-sm">
           <i data-lucide="sheet" style="width:16px;height:16px;"></i> Sync Sheet
         </button>
+        <span id="last-sync-badge" class="badge bg-dark bg-opacity-50 text-white border border-light border-opacity-25 px-3 py-2 d-inline-flex align-items-center gap-1">
+          <i data-lucide="clock" style="width:13px;height:13px;"></i> Last Update: -
+        </span>
       </div>
     </div>
   </nav>
 
-  <main class="container-xl py-4 flex-grow-1">
+  <!-- Live Clock Top-Left (Mode Monitoring) -->
+  <div id="monitor-clock" class="d-none position-fixed top-0 start-0 m-3 px-3 py-2 rounded-pill text-white fw-semibold small shadow-sm" style="z-index:1060; background:rgba(13,27,76,0.75); backdrop-filter:blur(16px); border:1px solid rgba(255,255,255,0.25);">
+    --:--:--
+  </div>
+
+  <main id="main-container" class="container-xl py-4 flex-grow-1">
 
     <!-- KPI Cards -->
     <div class="row g-3 mb-4" id="kpi-container"></div>
 
     <!-- Charts Section -->
     <div class="row g-4 mb-4">
-      <!-- Bar Chart per Product -->
-      <div class="col-lg-8">
+      <!-- Bar Chart 1: Semua (Normal) / Habis & Kritis (Mode Monitoring) -->
+      <div id="bar-card" class="col-lg-8">
         <div class="card border-0 shadow-sm h-100">
           <div class="card-body">
             <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
               <div>
-                <h2 class="h6 fw-bold mb-0 d-flex align-items-center gap-2">
+                <h2 id="bar-card-title" class="h6 fw-bold mb-0 d-flex align-items-center gap-2">
                   <i data-lucide="bar-chart-horizontal" class="text-primary" style="width:18px;height:18px;"></i>
                   Grafik Stok per Produk vs Minimum
                 </h2>
-                <small class="text-muted">Merah = Kritis (&le; Min), Kuning = Mendekati Min (+10%), Hijau = Aman</small>
+                <small id="bar-card-subtitle" class="text-muted">Merah = Kritis (&le; Min), Kuning = Mendekati Min (+10%), Hijau = Aman</small>
               </div>
               <div class="d-flex flex-wrap align-items-center gap-2">
                 <button id="btn-autoscroll" onclick="toggleAutoScroll()" class="btn btn-outline-secondary btn-sm fw-semibold d-inline-flex align-items-center gap-1">
@@ -92,8 +100,31 @@
         </div>
       </div>
 
+      <!-- Bar Chart 2: Stok Aman (Mode Monitoring) -->
+      <div id="safe-card" class="col-lg-6 d-none">
+        <div class="card border-0 shadow-sm h-100">
+          <div class="card-body">
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+              <div>
+                <h2 class="h6 fw-bold mb-0 d-flex align-items-center gap-2">
+                  <i data-lucide="check-circle-2" class="text-success" style="width:18px;height:18px;"></i>
+                  Grafik Stok Aman
+                </h2>
+                <small class="text-muted">Komponen dengan stok di atas batas minimum (+10%)</small>
+              </div>
+              <span id="safe-page-info" class="badge bg-dark bg-opacity-50 text-white border border-light border-opacity-25 px-3 py-2">Tab 1 / 1</span>
+            </div>
+            <div id="safe-chart-container" class="border rounded-2 p-2 bg-white" style="height: 65vh;">
+              <div class="position-relative w-100 h-100">
+                <canvas id="safeStockChart"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Donut Chart Status -->
-      <div class="col-lg-4">
+      <div id="donut-card" class="col-lg-4">
         <div class="card border-0 shadow-sm h-100">
           <div class="card-body d-flex flex-column justify-content-between">
             <div>
@@ -133,7 +164,6 @@
             <i data-lucide="sliders" class="text-primary" style="width:14px;height:14px;"></i> Atur Minimum Stok:
           </span>
           <input id="bulk-min-input" type="number" min="1" value="10" class="form-control form-control-sm fw-bold text-center glass-input" style="width: 100px;" />
-          <button onclick="applyBulkMin('selected')" class="btn btn-primary btn-sm fw-semibold">Terapkan ke Terpilih (<span id="selected-count">0</span>)</button>
           <button onclick="applyBulkMin('all')" class="btn btn-dark btn-sm fw-semibold">Terapkan ke Semua</button>
         </div>
       </div>
@@ -145,7 +175,6 @@
         <table class="table table-hover align-middle mb-0">
           <thead class="table-light sticky-top">
             <tr class="small text-uppercase text-secondary">
-              <th style="width:40px;"><input type="checkbox" id="select-all-cb" onchange="toggleSelectAll(this.checked)" class="form-check-input" /></th>
               <th>Location</th>
               <th>Item Number</th>
               <th>Product Name</th>
