@@ -54,7 +54,8 @@ body {
 }
 
 .card .bg-light,
-#chart-scroll-container {
+#chart-scroll-container,
+#safe-chart-container {
   background: rgba(15, 23, 42, 0.38) !important;
   backdrop-filter: blur(18px) saturate(180%);
   -webkit-backdrop-filter: blur(18px) saturate(180%);

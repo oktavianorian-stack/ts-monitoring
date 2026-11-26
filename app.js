@@ -252,7 +252,10 @@ function renderCharts() {
 
 function renderSafeChart(pageSize, barValuePlugin, rowBorderPlugin) {
   const safeItems = items
-    .filter(i => getStockStatus(i).key === 'safe')
+    .filter(i => {
+      const k = getStockStatus(i).key;
+      return k === 'safe' || k === 'warning';
+    })
     .sort((a, b) => a.stock - b.stock);
   const totalSafePages = Math.max(1, Math.ceil(safeItems.length / pageSize));
   const safePage = ((currentPage - 1) % totalSafePages) + 1;
@@ -276,7 +279,7 @@ function renderSafeChart(pageSize, barValuePlugin, rowBorderPlugin) {
         return `${i.location} - ${shortName.slice(0, 24)}${shortName.length > 24 ? '...' : ''}`;
       }),
       datasets: [
-        { label: 'Stock Saat Ini', data: pageItems.map(i => i.stock), backgroundColor: '#05ffa1', borderRadius: 6, barPercentage: 0.75 },
+        { label: 'Stock Saat Ini', data: pageItems.map(i => i.stock), backgroundColor: pageItems.map(i => getStockStatus(i).barColor), borderRadius: 6, barPercentage: 0.75 },
         { label: 'Batas Minimum', data: pageItems.map(i => i.min), backgroundColor: 'rgba(255, 255, 255, 0.25)', borderRadius: 6, barPercentage: 0.75 }
       ]
     },
@@ -453,7 +456,7 @@ function toggleMonitoringMode() {
 
   if (monitoringMode) {
     mainContainer.classList.remove('container-xl');
-    mainContainer.classList.add('container-fluid', 'px-4');
+    mainContainer.classList.add('container-fluid', 'px-4', 'pt-5');
     navbar.classList.add('d-none');
     filterSec.classList.add('d-none');
     tableSec.classList.add('d-none');
@@ -472,7 +475,7 @@ function toggleMonitoringMode() {
     }
     toggleAutoScroll(true);
   } else {
-    mainContainer.classList.remove('container-fluid', 'px-4');
+    mainContainer.classList.remove('container-fluid', 'px-4', 'pt-5');
     mainContainer.classList.add('container-xl');
     navbar.classList.remove('d-none');
     filterSec.classList.remove('d-none');
