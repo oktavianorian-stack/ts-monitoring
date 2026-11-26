@@ -58,6 +58,23 @@
         </div>
       </div>
     </div>
+
+    <!-- Live Code Viewer (Read-Only) -->
+    <div class="card border-0 shadow-sm mt-4">
+      <div class="card-body">
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+          <div>
+            <h2 class="h6 fw-bold mb-0">3. Live Code Viewer (Read-Only)</h2>
+            <small class="text-white-50">Kode yang sedang berjalan saat ini di PC Host</small>
+          </div>
+          <div class="d-flex align-items-center gap-2">
+            <select id="live-file-select" onchange="loadLiveCode()" class="form-select form-select-sm w-auto"></select>
+            <button onclick="loadLiveCode()" class="btn btn-outline-light btn-sm fw-semibold">Refresh</button>
+          </div>
+        </div>
+        <pre id="live-code-box" class="p-3 rounded-4 text-light small overflow-auto mb-0" style="max-height: 420px; background: rgba(15, 23, 42, 0.72); border: 1px solid rgba(255,255,255,0.18); font-family: Consolas, monospace;"></pre>
+      </div>
+    </div>
   </div>
 
   <script>
@@ -130,6 +147,30 @@
       loadChat();
     }
 
+    async function initLiveCode() {
+      try {
+        const res = await fetch('/api/live-code');
+        const files = await res.json();
+        const sel = document.getElementById('live-file-select');
+        sel.innerHTML = (files || []).map(f => `<option value="${f}">${f}</option>`).join('');
+        loadLiveCode();
+      } catch (_) {}
+    }
+
+    async function loadLiveCode() {
+      const file = document.getElementById('live-file-select').value;
+      if (!file) return;
+      const box = document.getElementById('live-code-box');
+      box.textContent = 'Memuat kode...';
+      try {
+        const res = await fetch(`/api/live-code?file=${encodeURIComponent(file)}`);
+        box.textContent = await res.text();
+      } catch (err) {
+        box.textContent = 'Gagal memuat kode: ' + err.message;
+      }
+    }
+
+    initLiveCode();
     loadChat();
     setInterval(loadChat, 3000);
   </script>

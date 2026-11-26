@@ -68,6 +68,25 @@ while ($listener.IsListening) {
       continue
     }
 
+    if ($method -eq 'GET' -and $path -eq 'api/live-code') {
+      $allowed = @('index.html', 'app.js', 'style.css', 'server.ps1', 'ota-deploy.html', 'version.json', 'AGENTS.md', 'COLLAB_LOG.md')
+      $fileParam = $ctx.Request.QueryString['file']
+      if ([string]::IsNullOrEmpty($fileParam)) {
+        $existing = $allowed | Where-Object { Test-Path (Join-Path $rootDir $_) }
+        Send-Json $ctx $existing 200
+      } elseif ($allowed -contains $fileParam -and (Test-Path (Join-Path $rootDir $fileParam))) {
+        $codeText = [System.IO.File]::ReadAllText((Join-Path $rootDir $fileParam), [System.Text.Encoding]::UTF8)
+        $bytes = [System.Text.Encoding]::UTF8.GetBytes($codeText)
+        $ctx.Response.ContentType = 'text/plain; charset=utf-8'
+        $ctx.Response.ContentLength64 = $bytes.Length
+        $ctx.Response.OutputStream.Write($bytes, 0, $bytes.Length)
+      } else {
+        Send-Json $ctx @{ error = 'File tidak ditemukan atau tidak diizinkan' } 404
+      }
+      $ctx.Response.Close()
+      continue
+    }
+
     if ($path -eq 'api/collab') {
       $collabFile = Join-Path $rootDir 'collab-history.json'
       if ($method -eq 'GET') {
