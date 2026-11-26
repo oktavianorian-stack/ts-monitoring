@@ -178,7 +178,7 @@ function renderCharts() {
       },
       scales: {
         x: { beginAtZero: true, grid: { color: 'rgba(255, 255, 255, 0.1)' }, ticks: { color: '#cbd5e1' } },
-        y: { grid: { display: false }, ticks: { color: '#f8fafc', font: { size: 11 } } }
+        y: { grid: { display: false }, ticks: { color: '#ffffff', font: { size: 13, weight: 'bold' } } }
       }
     }
   });
@@ -294,7 +294,7 @@ function renderSafeChart(pageSize, barValuePlugin, rowBorderPlugin) {
       },
       scales: {
         x: { beginAtZero: true, grid: { color: 'rgba(255, 255, 255, 0.1)' }, ticks: { color: '#cbd5e1' } },
-        y: { grid: { display: false }, ticks: { color: '#f8fafc', font: { size: 11 } } }
+        y: { grid: { display: false }, ticks: { color: '#ffffff', font: { size: 13, weight: 'bold' } } }
       }
     }
   });
