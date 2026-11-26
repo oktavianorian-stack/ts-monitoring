@@ -65,6 +65,10 @@ while ($listener.IsListening) {
 
       Send-Json $ctx @{ ok = $true; version = $newVer; updated = $updated } 200
       $ctx.Response.Close()
+      if ($updated -contains 'server.ps1' -or $updated -contains 'package.zip (extracted)') {
+        $listener.Stop()
+        exit 0
+      }
       continue
     }
 
