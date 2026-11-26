@@ -1,0 +1,15 @@
+# OS & Editor
+.DS_Store
+Thumbs.db
+desktop.ini
+*.log
+.vscode/
+.idea/
+
+# Environment & Secrets
+.env
+.env.local
+
+# Temporary / Backup
+*.tmp
+*.bak
