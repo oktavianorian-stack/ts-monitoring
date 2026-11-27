@@ -501,6 +501,95 @@ function toggleMonitoringMode() {
   lucide.createIcons();
 }
 
+function exitAllMonitoringModes() {
+  if (monitoringMode) toggleMonitoringMode();
+  if (prPoMonitoringMode) togglePrPoMonitoringMode();
+}
+
+function togglePrPoMonitoringMode() {
+  prPoMonitoringMode = !prPoMonitoringMode;
+  const mainContainer = document.getElementById('main-container');
+  const navbar = document.getElementById('main-navbar');
+  const filterSec = document.getElementById('filter-section');
+  const tableSec = document.getElementById('table-section');
+  const barCard = document.getElementById('bar-card');
+  const donutCard = document.getElementById('donut-card');
+  const safeCard = document.getElementById('safe-card');
+  const prpoSec = document.getElementById('prpo-monitor-section');
+  const exitZone = document.getElementById('exit-monitor-zone');
+  const monitorClock = document.getElementById('monitor-clock');
+
+  if (prPoMonitoringMode) {
+    document.body.classList.add('monitoring-active');
+    mainContainer.classList.remove('container-xl', 'py-4');
+    mainContainer.classList.add('container-fluid', 'px-4', 'pt-5', 'pb-2');
+    navbar.classList.add('d-none');
+    filterSec.classList.add('d-none');
+    tableSec.classList.add('d-none');
+    barCard.classList.add('d-none');
+    donutCard.classList.add('d-none');
+    safeCard.classList.add('d-none');
+    prpoSec.classList.remove('d-none');
+    exitZone.classList.remove('d-none');
+    monitorClock.classList.remove('d-none');
+    if (document.documentElement.requestFullscreen) {
+      document.documentElement.requestFullscreen().catch(() => {});
+    }
+    renderPrPoMonitor();
+  } else {
+    document.body.classList.remove('monitoring-active');
+    mainContainer.classList.remove('container-fluid', 'px-4', 'pt-5', 'pb-2');
+    mainContainer.classList.add('container-xl', 'py-4');
+    navbar.classList.remove('d-none');
+    filterSec.classList.remove('d-none');
+    tableSec.classList.remove('d-none');
+    barCard.classList.remove('d-none');
+    donutCard.classList.remove('d-none');
+    prpoSec.classList.add('d-none');
+    exitZone.classList.add('d-none');
+    monitorClock.classList.add('d-none');
+    if (document.fullscreenElement && document.exitFullscreen) {
+      document.exitFullscreen().catch(() => {});
+    }
+  }
+  lucide.createIcons();
+}
+
+function renderPrPoMonitor() {
+  const prItems = items.filter(i => i.prStatus === 'PR Created' || i.prStatus === 'PR Approved');
+  const poItems = items.filter(i => ['PO Issued', 'In Transit', 'Received'].includes(i.prStatus));
+
+  document.getElementById('pr-count-badge').textContent = `${prItems.length} Item`;
+  document.getElementById('po-count-badge').textContent = `${poItems.length} Item`;
+
+  const prBody = document.getElementById('pr-table-body');
+  prBody.innerHTML = prItems.length
+    ? prItems.map(i => `
+      <tr>
+        <td class="font-mono fw-semibold">${i.location}</td>
+        <td><div class="fw-semibold">${i.productName}</div><small class="text-white-50 font-mono">${i.itemNumber}</small></td>
+        <td class="font-mono text-warning fw-semibold">${i.pr || '-'}</td>
+        <td><strong>${i.stock}</strong> / ${i.min}</td>
+        <td><span class="badge bg-warning text-dark">${i.prStatus}</span></td>
+      </tr>
+    `).join('')
+    : '<tr><td colspan="5" class="text-center text-white-50 py-4">Belum ada item dalam proses PR.</td></tr>';
+
+  const poBody = document.getElementById('po-table-body');
+  poBody.innerHTML = poItems.length
+    ? poItems.map(i => `
+      <tr>
+        <td class="font-mono fw-semibold">${i.location}</td>
+        <td><div class="fw-semibold">${i.productName}</div><small class="text-white-50 font-mono">${i.itemNumber}</small></td>
+        <td class="font-mono text-info fw-semibold">${i.po || '-'}</td>
+        <td>${i.supplier || '-'}</td>
+        <td>${i.eta || '-'}</td>
+        <td><span class="badge bg-info text-dark">${i.prStatus}</span></td>
+      </tr>
+    `).join('')
+    : '<tr><td colspan="6" class="text-center text-white-50 py-4">Belum ada item yang sudah PO.</td></tr>';
+}
+
 // Live Clock for Mode Monitoring
 function updateMonitorClock() {
   const el = document.getElementById('monitor-clock');
