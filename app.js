@@ -454,8 +454,9 @@ function toggleMonitoringMode() {
   const scrollContainer = document.getElementById('chart-scroll-container');
 
   if (monitoringMode) {
-    mainContainer.classList.remove('container-xl');
-    mainContainer.classList.add('container-fluid', 'px-4', 'pt-5');
+    document.body.classList.add('monitoring-active');
+    mainContainer.classList.remove('container-xl', 'py-4');
+    mainContainer.classList.add('container-fluid', 'px-4', 'pt-5', 'pb-2');
     navbar.classList.add('d-none');
     filterSec.classList.add('d-none');
     tableSec.classList.add('d-none');
@@ -467,15 +468,17 @@ function toggleMonitoringMode() {
     barSub.textContent = 'Menampilkan item dengan stok 0 (Habis) dan <= Minimum (Kritis)';
     exitZone.classList.remove('d-none');
     monitorClock.classList.remove('d-none');
-    scrollContainer.style.height = '65vh';
+    scrollContainer.style.height = 'calc(100vh - 305px)';
+    document.getElementById('safe-chart-container').style.minHeight = 'calc(100vh - 235px)';
     currentPage = 1;
     if (document.documentElement.requestFullscreen) {
       document.documentElement.requestFullscreen().catch(() => {});
     }
     toggleAutoScroll(true);
   } else {
-    mainContainer.classList.remove('container-fluid', 'px-4', 'pt-5');
-    mainContainer.classList.add('container-xl');
+    document.body.classList.remove('monitoring-active');
+    mainContainer.classList.remove('container-fluid', 'px-4', 'pt-5', 'pb-2');
+    mainContainer.classList.add('container-xl', 'py-4');
     navbar.classList.remove('d-none');
     filterSec.classList.remove('d-none');
     tableSec.classList.remove('d-none');

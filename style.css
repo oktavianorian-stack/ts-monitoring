@@ -206,3 +206,8 @@ body {
   opacity: 1;
   transform: scale(1);
 }
+
+body.monitoring-active {
+  height: 100vh;
+  overflow: hidden;
+}
