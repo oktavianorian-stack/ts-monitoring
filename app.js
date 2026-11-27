@@ -395,7 +395,6 @@ function changePage(delta) {
   currentPage += delta;
   if (currentPage > totalPages) {
     currentPage = 1;
-    syncFromAppsScript(true);
   } else if (currentPage < 1) {
     currentPage = totalPages;
   }
@@ -676,4 +675,3 @@ if (!localStorage.getItem('ts_apps_script_url')) {
 }
 updateLastSyncBadge(localStorage.getItem('ts_last_sync'));
 renderAll();
-syncFromAppsScript(true);
