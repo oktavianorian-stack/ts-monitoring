@@ -27,6 +27,9 @@
         <button id="btn-monitoring-mode" onclick="toggleMonitoringMode()" class="btn btn-akasha-gold btn-sm fw-bold d-inline-flex align-items-center gap-1 shadow-sm">
           <i data-lucide="monitor" style="width:16px;height:16px;"></i> Mode Monitoring
         </button>
+        <button id="btn-prpo-mode" onclick="togglePrPoMonitoringMode()" class="btn btn-info btn-sm fw-bold d-inline-flex align-items-center gap-1 shadow-sm text-dark">
+          <i data-lucide="shopping-cart" style="width:16px;height:16px;"></i> Monitor PR/PO
+        </button>
         <button onclick="openAppsScriptModal()" class="btn btn-light btn-sm fw-semibold d-inline-flex align-items-center gap-1 shadow-sm">
           <i data-lucide="sheet" style="width:16px;height:16px;"></i> Sync Sheet
         </button>
@@ -138,6 +141,74 @@
               <canvas id="statusDonutChart"></canvas>
             </div>
             <div id="donut-summary" class="row text-center border-top pt-3 g-2"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PR & PO Monitoring Section (2 Tables Side by Side: Kiri PR, Kanan PO) -->
+    <div id="prpo-monitor-section" class="row g-4 d-none">
+      <!-- Kiri: Dalam PR -->
+      <div class="col-lg-6">
+        <div class="card border-0 shadow-sm h-100">
+          <div class="card-body d-flex flex-column">
+            <div class="d-flex align-items-center justify-content-between mb-3">
+              <div>
+                <h2 class="h6 fw-bold mb-0 d-flex align-items-center gap-2">
+                  <i data-lucide="file-text" class="text-warning" style="width:18px;height:18px;"></i>
+                  Dalam PR (Purchase Requisition)
+                </h2>
+                <small class="text-muted">Item dengan status PR Created / PR Approved</small>
+              </div>
+              <span id="pr-count-badge" class="badge bg-warning text-dark fw-bold px-3 py-2">0 Item</span>
+            </div>
+            <div class="table-responsive flex-grow-1" style="max-height: calc(100vh - 280px); overflow-y: auto;">
+              <table class="table table-hover align-middle mb-0 small">
+                <thead class="table-light sticky-top">
+                  <tr class="text-uppercase text-secondary">
+                    <th>Loc</th>
+                    <th>Item / Produk</th>
+                    <th>No. PR</th>
+                    <th>Stok / Min</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody id="pr-table-body"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Kanan: Sudah PO -->
+      <div class="col-lg-6">
+        <div class="card border-0 shadow-sm h-100">
+          <div class="card-body d-flex flex-column">
+            <div class="d-flex align-items-center justify-content-between mb-3">
+              <div>
+                <h2 class="h6 fw-bold mb-0 d-flex align-items-center gap-2">
+                  <i data-lucide="truck" class="text-info" style="width:18px;height:18px;"></i>
+                  Sudah PO (Purchase Order)
+                </h2>
+                <small class="text-muted">Item dengan status PO Issued / In Transit / Received</small>
+              </div>
+              <span id="po-count-badge" class="badge bg-info text-dark fw-bold px-3 py-2">0 Item</span>
+            </div>
+            <div class="table-responsive flex-grow-1" style="max-height: calc(100vh - 280px); overflow-y: auto;">
+              <table class="table table-hover align-middle mb-0 small">
+                <thead class="table-light sticky-top">
+                  <tr class="text-uppercase text-secondary">
+                    <th>Loc</th>
+                    <th>Item / Produk</th>
+                    <th>No. PO</th>
+                    <th>Supplier</th>
+                    <th>ETA</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody id="po-table-body"></tbody>
+              </table>
+            </div>
           </div>
         </div>
       </div>
@@ -255,7 +326,7 @@
 
   <!-- Floating Exit Monitoring Zone (Top-Right Hover) -->
   <div id="exit-monitor-zone" class="d-none">
-    <button onclick="toggleMonitoringMode()" class="btn btn-danger rounded-circle shadow-lg d-flex align-items-center justify-content-center" style="width:44px;height:44px;" title="Keluar Mode Monitoring">
+    <button onclick="exitAllMonitoringModes()" class="btn btn-danger rounded-circle shadow-lg d-flex align-items-center justify-content-center" style="width:44px;height:44px;" title="Keluar Mode Monitoring">
       <i data-lucide="x" style="width:22px;height:22px;"></i>
     </button>
   </div>
